@@ -43,18 +43,32 @@ void SidepanelMonitor::on_timer()
         {
             _msg_count++;
             ui->labelCount->setText( QString("Messages received: %1").arg(_msg_count) );
+            std::cout << "Client recieve message. Size of message " << msg.size() << " message " << *(reinterpret_cast<uint32_t*>(msg.data())) << std::endl;
+
 
             const char* buffer = reinterpret_cast<const char*>(msg.data());
+            printf("buffer:  %d\n", *buffer );
 
             const uint32_t header_size = flatbuffers::ReadScalar<uint32_t>( buffer );
+            std::cout << "header_size: " << header_size << std::endl;
+
             const uint32_t num_transitions = flatbuffers::ReadScalar<uint32_t>( &buffer[4+header_size] );
+            std::cout << "num_transitions: " << num_transitions << std::endl;
+
+            uint16_t uid = flatbuffers::ReadScalar<uint16_t>(&buffer[4]);
+            std::cout << "first node_uid: " << uid << std::endl;
 
             for(size_t offset = 4; offset < header_size +4; offset +=3 )
             {
                 uint16_t uid = flatbuffers::ReadScalar<uint16_t>(&buffer[offset]);
+                std::cout << "node_uid: " << uid << std::endl;
                 const uint16_t index = _uid_to_index.at(uid);
+                std::cout << "node_index: " << index << std::endl;
                 AbstractTreeNode* node = _loaded_tree.node( index );
                 node->status = convert(flatbuffers::ReadScalar<Serialization::NodeStatus>(&buffer[offset+2] ));
+                printf("node_status_num: %d\n", flatbuffers::ReadScalar<Serialization::NodeStatus>(&buffer[offset+2] ));
+                printf("node_status: %s\n", toStr(node->status, true).c_str() );
+                printf("-----------------\n");
             }
 
             std::vector<std::pair<int, NodeStatus>> node_status;
@@ -68,9 +82,13 @@ void SidepanelMonitor::on_timer()
                 // const double t_usec = flatbuffers::ReadScalar<uint32_t>( &buffer[offset+4] );
                 // double timestamp = t_sec + t_usec* 0.000001;
                 const uint16_t uid = flatbuffers::ReadScalar<uint16_t>(&buffer[offset+8]);
+                // printf("-----------------\n");
+                std::cout << "node_uid: " << uid << std::endl;
                 const uint16_t index = _uid_to_index.at(uid);
+                std::cout << "node_index: " << index << std::endl;
                 // NodeStatus prev_status = convert(flatbuffers::ReadScalar<Serialization::NodeStatus>(&buffer[index+10] ));
                 NodeStatus status  = convert(flatbuffers::ReadScalar<Serialization::NodeStatus>(&buffer[offset+11] ));
+                // printf("node_status: %s\n", toStr(status, true).c_str() );
 
                 _loaded_tree.node(index)->status = status;
                 node_status.push_back( {index, status} );
@@ -95,12 +113,17 @@ bool SidepanelMonitor::getTreeFromServer()
         zmq::socket_t  zmq_client( _zmq_context, ZMQ_REQ );
         zmq_client.connect( _connection_address_req.c_str() );
 
+        printf("%s", _connection_address_req.c_str());
+
         int timeout_ms = 1000;
         zmq_client.setsockopt(ZMQ_RCVTIMEO,&timeout_ms, sizeof(int) );
 
         zmq_client.send(request);
+        std::cout << "Client send request. Size of request " << request.size() << " request " << *(reinterpret_cast<uint8_t*>(request.data())) << std::endl;
 
         bool received = zmq_client.recv(&reply);
+        std::cout << "Client received reply. Size of reply " << reply.size() << " reply " << *(reinterpret_cast<uint8_t*>(reply.data())) << std::endl;
+
         if( ! received )
         {
             return false;
@@ -114,6 +137,7 @@ bool SidepanelMonitor::getTreeFromServer()
         _loaded_tree  = std::move( res_pair.first );
         _uid_to_index = std::move( res_pair.second );
 
+
         // add new models to registry
         for(const auto& tree_node: _loaded_tree.nodes())
         {
@@ -122,6 +146,7 @@ bool SidepanelMonitor::getTreeFromServer()
             {
                 addNewModel( tree_node.model );
             }
+
         }
 
         try {
@@ -136,6 +161,8 @@ bool SidepanelMonitor::getTreeFromServer()
 
         std::vector<std::pair<int, NodeStatus>> node_status;
         node_status.reserve(_loaded_tree.nodesCount());
+ 
+        std::cout << "uid_to_index from bt: " << _loaded_tree.nodesCount() << std::endl;
 
         //  qDebug() << "--------";
 
