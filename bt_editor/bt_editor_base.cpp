@@ -192,13 +192,13 @@ const NodeModels &BuiltinNodeModels()
     {
         BT::BehaviorTreeFactory factory;
 
-        factory.registerNodeType<BT::DecoratorSubtreeNode>("Root");
+        factory.registerNodeType<BT::SubtreeNode>("Root");
 
         NodeModels out;
         for( const auto& it: factory.manifests())
         {
             const auto& model_name = it.first;
-            if( model_name == "SubTree")
+            if( model_name == "SubTree" || model_name == "SubTreePlus" )
             {
                 continue;
             }

@@ -130,6 +130,7 @@ BehaviorTreeDataModel::BehaviorTreeDataModel(const NodeModel &model):
                     { emit this->portValueDoubleChicked(nullptr); });
 
             QLabel* form_label  =  new QLabel( label, _params_widget );
+            form_label->setStyleSheet("QToolTip {color: black;}");
             form_label->setToolTip( description );
 
             form_field->setMinimumWidth(DEFAULT_FIELD_WIDTH);
@@ -238,7 +239,7 @@ unsigned int BehaviorTreeDataModel::nPorts(QtNodes::PortType portType) const
 
 NodeDataModel::ConnectionPolicy BehaviorTreeDataModel::portOutConnectionPolicy(QtNodes::PortIndex) const
 {
-    return ( nodeType() == NodeType::DECORATOR ) ? ConnectionPolicy::One : ConnectionPolicy::Many;
+    return ( nodeType() == NodeType::DECORATOR || _model.registration_ID == "Root") ? ConnectionPolicy::One : ConnectionPolicy::Many;
 }
 
 void BehaviorTreeDataModel::updateNodeSize()
