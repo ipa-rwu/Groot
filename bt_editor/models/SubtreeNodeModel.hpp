@@ -4,45 +4,40 @@
 #include "BehaviorTreeNodeModel.hpp"
 #include <QPushButton>
 
-class SubtreeNodeModel : public BehaviorTreeDataModel
-{
-    Q_OBJECT
+class SubtreeNodeModel : public BehaviorTreeDataModel {
+  Q_OBJECT
 public:
+  SubtreeNodeModel(const NodeModel &model);
 
-    SubtreeNodeModel(const NodeModel& model);
+  ~SubtreeNodeModel() override = default;
 
-    ~SubtreeNodeModel() override = default;
+  void setExpanded(bool expand);
 
-    void setExpanded(bool expand);
+  bool expanded() const { return _expanded; }
 
-    bool expanded() const { return _expanded; }
+  unsigned int nPorts(PortType portType) const override {
+    int out_port = _expanded ? 1 : 0;
+    return portType == PortType::In ? 1 : out_port;
+  }
 
-    unsigned int  nPorts(PortType portType) const override
-    {
-        int out_port = _expanded ? 1 : 0;
-        return portType == PortType::In ? 1:out_port;
-    }
+  virtual const char *className() const final { return Name(); }
 
-    virtual const char* className() const final { return Name(); }
+  static const char *Name() { return "SubTree"; }
 
-    static const char* Name() { return "SubTree";  }
+  QPushButton *expandButton() { return _expand_button; }
 
-    QPushButton* expandButton() { return _expand_button; }
+  virtual void setInstanceName(const QString &name) override;
 
-    virtual void setInstanceName(const QString& name) override;
+  QJsonObject save() const override;
 
-    QJsonObject save() const override;
-
-    void restore(QJsonObject const &) override;
+  void restore(QJsonObject const &) override;
 
 signals:
-    void expandButtonPushed();
+  void expandButtonPushed();
 
 private:
-    QPushButton* _expand_button;
-    bool _expanded;
-
+  QPushButton *_expand_button;
+  bool _expanded;
 };
-
 
 #endif // SUBTREE_NODEMODEL_HPP
